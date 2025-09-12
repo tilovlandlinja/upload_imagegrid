@@ -48,6 +48,24 @@ class ArcGISService:
         except Exception as e:
             print(f"Error transforming GPS to UTM: {e}")
             return None, None
+        
+    def get_mast_by_id(self, mast_id):
+        """
+        Retrieve mast data by its ID.
+
+        Args:
+            mast_id (int): The ID of the mast to retrieve.
+
+        Returns:
+            dict: Mast feature data or None if not found.
+        """
+        where_clause = f"ID = {mast_id}"
+        features = self.get_mast_data(where_clause=where_clause, out_fields="*", return_geometry=True)
+        if features:
+            return features[0]  # Return the first matching feature
+        else:
+            print(f"No mast found with ID {mast_id}")
+            return None
 
     def transform_utm_to_gps(self, easting, northing):
         """
@@ -250,6 +268,8 @@ class ArcGISService:
 
                 # Calculate Euclidean distance in UTM coordinates (meters)
                 distance = ((target_easting - mast_easting) ** 2 + (target_northing - mast_northing) ** 2) ** 0.5
+
+                print(f"Mast ID {mast['attributes'].get('ID')} at UTM ({mast_easting:.2f}, {mast_northing:.2f}) is {distance:.2f}m away")
 
                 if distance < min_distance:
                     min_distance = distance

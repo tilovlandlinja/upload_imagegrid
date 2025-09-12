@@ -64,7 +64,7 @@ class ImageProcessingService:
                     # Create a temporary resized version
                     base_name = os.path.splitext(os.path.basename(image_path))[0]
                     dir_name = os.path.dirname(image_path)
-                    output_path = os.path.join(dir_name, f"{base_name}_resized.jpg")
+                    output_path = os.path.join(dir_name, f"{base_name}_r.jpg")
 
                 # Save with EXIF data preserved
                 if exif_data:

@@ -170,13 +170,13 @@ class ImageGridService:
 
         url = f"{self.imgr_api_url}api/v1.0/{tenant_name}/{schema_name}/{image_id}/runschematasks"
         
-        print(f"runschematasks_URL->>> {url}")
+        #print(f"runschematasks_URL->>> {url}")
 
         #print( f"Record->>> {record}")
         # Konverter 'record' til JSON
         json_data = json.dumps(record, ensure_ascii=False)
         json_data = json_data.encode('utf-8')
-        print(f"JSON data: {json_data}")
+        #print(f"JSON data: {json_data}")
 
         # Sett opp headers og innhold
         headers = {
@@ -186,10 +186,10 @@ class ImageGridService:
 
         # Send POST-forespørselen for å oppdatere bildet
         response = requests.post(url, headers=headers, data=json_data)
-        print("Status code:", response.status_code)
-        print(response.json())
+        #print("Status code:", response.status_code)
+        #print(response.json())
         if response.status_code == 200:
-            print(response.json())
+            #   print(response.json())
             print("Update successful.")
             return response.json()
         else:
