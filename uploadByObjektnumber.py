@@ -237,11 +237,12 @@ class ToppbefaringUploader:
         failed_count = 0
         skipped_count = 0
 
-        # Get list of image files first
+        # Get list of image files recursively
         image_files = []
-        for filename in os.listdir(folder_path):
-            if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')):
-                image_files.append(filename)
+        for root, dirs, files in os.walk(folder_path):
+            for filename in files:
+                if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')):
+                    image_files.append(os.path.join(root, filename))
 
         total_files = len(image_files)
         print(f"Found {total_files} image files to process")
