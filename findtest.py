@@ -34,163 +34,55 @@ class ToppbefaringUploader:
 
     def upload_toppbefaring_image(self, image_path, base_attributes, find_mast=True, resize_options=None):
         try:
-            # Handle resizing if requested
-            upload_path = image_path
-            max_width = 7680 
-            max_height = 4320
-            quality = 90
-            
-            # Calculate file hash (use original path for tracking)
+
+            print(f"Processing image: {image_path}")
+
             file_hash = self.image_service.calculate_file_hash(image_path, 'md5')
 
-            # Check if already uploaded
+            filename = os.path.basename(image_path)  # '2195163-002.jpg'
+            number = filename.split('-')[0]        # '2195163'
+            print(number)
+
+            attributes = self.arcgis_service.get_mast_by_id(number)
+
+            print(f"Attributes from mast lookup: {attributes}")
+
             is_uploaded, upload_time, update_time = self.tracker.has_been_uploaded(file_hash)
-            if is_uploaded:
-                print(f"Image {os.path.basename(image_path)} already uploaded at {upload_time}")
-                return None
-            
-            print(f"Checking if image {os.path.basename(image_path)} exists in ImageGrid...")
-            exist_in_imagegrid = self.image_service.check_image_exists(file_hash)
-            print(f"Exist in ImageGrid: {exist_in_imagegrid}")
-
-            if exist_in_imagegrid:
-                print(f"Image {os.path.basename(image_path)} already exists in ImageGrid.")
-                # Log the upload in tracking file to avoid future re-uploads
-                log_data = [
-                    os.path.basename(image_path),
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    file_hash,
-                    upload_time if upload_time else datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    update_time if update_time else datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "exists_in_imagegrid"
-                ]
-                self.tracker.log_upload(log_data)
-                return None
-            
-            
-            # Get GPS coordinates from image (use upload path for EXIF data)
-            latitude, longitude = self.find_nearest.get_gps_from_image(image_path)
-
-            # Find nearest mast if coordinates available and find_mast is True
             mast_attributes = {}
-            if find_mast and latitude and longitude:
-                nearest_mast = self.arcgis_service.find_nearest_mast(latitude, longitude)
-                if nearest_mast:
-                    mast_attributes = self.arcgis_service.get_mast_attributes(nearest_mast)
-                    print(f"Found nearest mast: {mast_attributes.get('driftsmerking', 'Unknown')} at {nearest_mast.get('distance', 0):.2f}m")
-                else:
-                    print(f"No nearby mast found for {os.path.basename(image_path)}")
-                    log_data = [
-                        os.path.basename(image_path),
-                        None,
-                        None,
-                        None,
-                        None,
-                        None,
-                        None,
-                        None,
-                        None,
-                        file_hash,
-                        upload_time if upload_time else datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        update_time if update_time else datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "No nearby mast found"
-                    ]
-                    self.tracker.log_upload(log_data)
-                    return None
+            if( attributes is None):
+                latitude, longitude = self.find_nearest.get_gps_from_image(image_path)
+                # Find nearest mast if coordinates available and find_mast is True
                 
-            upload_path = self.image_processor.resize_image_with_exif(
-                image_path, max_width, max_height, quality
-            )
-            # Upload the image
-            upload_result = self.image_service.upload_image(upload_path, file_hash)
+                if find_mast and latitude and longitude:
+                    nearest_mast = self.arcgis_service.find_nearest_mast(latitude, longitude)
+                    if nearest_mast:
+                        mast_attributes = self.arcgis_service.get_mast_attributes(nearest_mast)
+                        print(f"Found nearest mast: {mast_attributes.get('driftsmerking', 'Unknown')} at {nearest_mast.get('distance', 0):.2f}m")
+                    else:
+                        print(f"No nearby mast found for {os.path.basename(image_path)}")
+                        log_data = [
+                            os.path.basename(image_path),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            file_hash,
+                            upload_time if upload_time else datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            update_time if update_time else datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "No nearby mast found"
+                        ]
+                        self.tracker.log_upload(log_data)
+                        return None
+            else:
+                mast_attributes = self.arcgis_service.get_mast_attributes(attributes)
 
-            print(f"Upload result: {upload_result}")
+            print(f"Mast attributes: {mast_attributes}")
 
-            if not upload_result:
-                print(f"Failed to upload {image_path}")
-                return None
-
-            # Delete the resized file if it was created
-            try:
-                if upload_path != image_path and os.path.exists(upload_path):
-                    os.remove(upload_path)
-            except Exception as e:
-                print(f"Warning: Could not delete temporary file {upload_path}: {str(e)}")
-
-            image_id = upload_result.get('id')
-
-            print(f"Uploaded image ID: {image_id}")
-            #image_id = '04ea4093-eac9-4330-b102-423549138bbb'
-            if not image_id:
-                print(f"No ID returned for {image_path}")
-                return None
-
-            # Combine base attributes with mast attributes
-            combined_attributes = base_attributes.copy()
-            combined_attributes.update(mast_attributes)
-
-            #print(f"mast_attributes attributes: {mast_attributes}")
-            # Add GPS coordinates if available
-            if latitude and longitude:
-                longitude, latitude = self.arcgis_service.transform_utm_to_gps(mast_attributes.get('geometry', {}).get('x', longitude), mast_attributes.get('geometry', {}).get('y', latitude))
-
-            """ print(f"Combined attributes for {os.path.basename(image_path)}: {combined_attributes}") """
-
-            objectnumber = mast_attributes.get('id', '')
-            driftsmerking = combined_attributes.get('driftsmerking', '')
-            linje_navn = combined_attributes.get('linje_navn', '')
-            linje_id = combined_attributes.get('linje_nummer', '')
-            filename = combined_attributes.get('Name', '')
-            
-            imageinfo = {
-                    'filename': filename,
-                    "Location": {"type": "Point", "coordinates": [longitude, latitude]} if latitude and longitude else None,
-                    'objektnummer': objectnumber,
-                    'linje_navn': linje_navn,
-                    'linje_id': linje_id,
-                    'driftsmerking': driftsmerking,
-                    'erHistorisk': False,
-                    'kilde': self.kilde,
-                    'anleggstype': "MS",
-                    'filehash': file_hash
-                }
-            # Update image info with toppbefaring attributes
-            update_result = self.image_service.update_image_info(image_id, imageinfo, self.tenant_name, self.schema_name)
-            #print(f"Update result: {update_result}")
-            if update_result == "Update failed":
-                print(f"Failed to update attributes for {image_path}")
-                return None
-
-            # Log the upload with all fields from imageinfo
-            log_data = [
-                imageinfo.get('filename', ''),
-                imageinfo.get('Location', ''),
-                imageinfo.get('objektnummer', ''),
-                imageinfo.get('linje_navn', ''),
-                imageinfo.get('linje_id', ''),
-                imageinfo.get('driftsmerking', ''),
-                imageinfo.get('erHistorisk', ''),
-                imageinfo.get('kilde', ''),
-                imageinfo.get('anleggstype', ''),
-                imageinfo.get('filehash', ''),
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "ok"
-            ]
-
-            """ print(f"Logging upload: {log_data}") """
-            self.tracker.log_upload(log_data)
-
-            print(f"Successfully uploaded and updated {imageinfo.get('filename')}")
-            return upload_result
-
+            return None
         except Exception as e:
             print(f"Error uploading {image_path}: {str(e)}")
             # Log failed upload attempt

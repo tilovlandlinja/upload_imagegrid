@@ -201,6 +201,7 @@ class ArcGISService:
             'units': 'esriSRUnit_Meter',
             'outFields': '*',
             'returnGeometry': True,
+            'where': 'SPENNING = 22',
             'f': 'json'
         }
 

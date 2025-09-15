@@ -78,7 +78,7 @@ class FindNearestService:
         print(f"GPS-koordinater fra skapet: ( {nearest_row['latitude']}, {nearest_row['longitude']} )")
         print(f"Nærmeste treff er på avstand: {nearest_row['distance']} m")
 
-        if nearest_row['distance'] < 50:  # Terskelverdi for avstand i meter
+        if nearest_row['distance'] < 10:
             return nearest_row
         else:
             return None

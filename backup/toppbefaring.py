@@ -86,13 +86,12 @@ class ToppbefaringUploader:
                     print(f"No nearby mast found for {os.path.basename(image_path)}")
 
             # Upload the image
-            """ upload_result = self.image_service.upload_image(upload_path, file_hash)
+            upload_result = self.image_service.upload_image(upload_path, file_hash)
             if not upload_result:
                 print(f"Failed to upload {image_path}")
-                return None """
+                return None
 
-            #image_id = upload_result.get('Id')
-            image_id = 'b6214797-4438-4e7a-b72e-b4dcf4e6d4f0' # Temporary hardcoded ID for testing
+            image_id = upload_result.get('Id')
             if not image_id:
                 print(f"No ID returned for {image_path}")
                 return None
@@ -479,98 +478,15 @@ if __name__ == "__main__":
             resize_confirm = input("Do you want to resize images before uploading? (y/n): ")
             resize_options = None
             if resize_confirm.lower() == 'y':
-                # Get image info from first image to determine presets
-                image_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
-                if image_files:
-                    first_image_path = os.path.join(folder_path, image_files[0])
-                    image_info = uploader.image_processor.get_image_info(first_image_path)
-
-                    if image_info:
-                        print(f"\nDetected image dimensions: {image_info['width']}x{image_info['height']}")
-                        print(f"Original file size: ~{image_info['file_size'] / (1024*1024):.1f}MB")
-
-                        # Get available presets
-                        presets = uploader.image_processor.get_resize_presets(image_info['width'], image_info['height'])
-
-                        print("\nAvailable resize presets:")
-                        for preset_name, preset_data in presets.items():
-                            estimate = uploader.image_processor.estimate_file_size(
-                                image_info['width'], image_info['height'], image_info['file_size'],
-                                preset_data['max_width'], preset_data['max_height'], preset_data['quality']
-                            )
-                            print(f"  {preset_name}: {preset_data['description']} (~{estimate['estimated_size_mb']:.1f}MB, {estimate['size_reduction_percent']:.0f}% reduction)")
-                        print("\nChoose a preset (high_quality/balanced/compact/web_optimized) or 'custom' for manual settings:")
-
-                        preset_choice = input("Enter preset choice: ").lower().strip()
-
-                        if preset_choice in presets:
-                            resize_options = presets[preset_choice].copy()
-                            resize_options['overwrite'] = False
-                            print(f"Selected: {presets[preset_choice]['description']}")
-                        elif preset_choice == 'custom':
-                            try:
-                                max_width = int(input("Enter max width (e.g., 4800): "))
-                                max_height = int(input("Enter max height (e.g., 3200): "))
-                                quality = int(input("Enter quality (1-100, e.g., 90): "))
-                                resize_options = {
-                                    'max_width': max_width,
-                                    'max_height': max_height,
-                                    'quality': quality,
-                                    'overwrite': False
-                                }
-                                print(f"Custom settings: {max_width}x{max_height} at {quality}% quality")
-                            except ValueError:
-                                print("Invalid input, using high_quality preset as default")
-                                resize_options = presets['high_quality'].copy()
-                                resize_options['overwrite'] = False
-                        else:
-                            print("Invalid choice, using high_quality preset as default")
-                            resize_options = presets['high_quality'].copy()
-                            resize_options['overwrite'] = False
-                    else:
-                        # Fallback to default settings if we can't get image info
-                        resize_options = {
-                            'max_width': 4800,
-                            'max_height': 3200,
-                            'quality': 90,
-                            'overwrite': False
-                        }
-                        print("Using default resize settings: 4800x3200 at 90% quality")
-                else:
-                    print("No image files found in folder")
+                resize_options = {
+                    'max_width': 1920,
+                    'max_height': 1080,
+                    'quality': 85,
+                    'overwrite': False  # Create resized copies
+                }
 
             # Upload images from a folder with mast linking enabled
             uploader.upload_from_folder(folder_path, attributes_template, find_mast=True, resize_options=resize_options)
-
-            # Show resize statistics if resizing was performed
-            if resize_options:
-                print("\n=== RESIZE STATISTICS ===")
-                resized_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('_resized.jpg', '_resized.jpeg'))]
-                if resized_files:
-                    total_original_size = 0
-                    total_resized_size = 0
-
-                    for resized_file in resized_files[:5]:  # Sample first 5 files
-                        resized_path = os.path.join(folder_path, resized_file)
-                        original_name = resized_file.replace('_resized', '')
-                        original_path = os.path.join(folder_path, original_name)
-
-                        if os.path.exists(original_path) and os.path.exists(resized_path):
-                            original_size = os.path.getsize(original_path)
-                            resized_size = os.path.getsize(resized_path)
-                            total_original_size += original_size
-                            total_resized_size += resized_size
-
-                            reduction_mb = (original_size - resized_size) / (1024 * 1024)
-                            print(f"  {os.path.basename(original_path)}: {reduction_mb:.1f} MB reduction")
-                    if total_original_size > 0:
-                        avg_reduction = (total_original_size - total_resized_size) / total_original_size * 100
-                        print(f"  Total reduction: {total_original_size - total_resized_size} bytes")
-                        print(f"  Average reduction: {avg_reduction:.1f}%")
-                    else:
-                        print("No original files found for comparison")
-                else:
-                    print("No resized files found to analyze")
         else:
             print("Upload cancelled.")
 
