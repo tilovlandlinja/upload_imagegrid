@@ -1,4 +1,6 @@
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from datetime import datetime
 from dotenv import load_dotenv
 from services.imagegrid import ImageGridService
@@ -57,12 +59,14 @@ class ToppbefaringUploader:
             
             
             filename = os.path.basename(image_path)  # '2195163-002.jpg'
-            number = filename.split('-')[0]        # '2195163'
+            number = filename.split('-')[0] if '-' in filename else None  # '2195163'
             print(number)
             # Get GPS coordinates from image (use upload path for EXIF data)
             latitude, longitude = self.find_nearest.get_gps_from_image(image_path)
-
-            attributes = self.arcgis_service.get_mast_by_id(number)
+            if( number ):
+                attributes = self.arcgis_service.get_mast_by_id(number)
+            else:
+                attributes = None
             mast_attributes = {}
             if( attributes is None):
 
@@ -148,9 +152,11 @@ class ToppbefaringUploader:
             driftsmerking = combined_attributes.get('driftsmerking', '')
             linje_navn = combined_attributes.get('linje_navn', '')
             linje_id = combined_attributes.get('linje_nummer', '')
-            filename = combined_attributes.get('Name', '')
+            #filename = combined_attributes.get('Name', '')
 
             longitude, latitude = self.arcgis_service.transform_utm_to_gps(mast_attributes.get('geometry', {}).get('x', longitude), mast_attributes.get('geometry', {}).get('y', latitude))
+            
+            print( "Filename: ", filename )
             
             imageinfo = {
                     'filename': filename,
@@ -237,7 +243,7 @@ class ToppbefaringUploader:
         failed_count = 0
         skipped_count = 0
 
-        # Get list of image files recursively
+        # Get list of image files first
         image_files = []
         for root, dirs, files in os.walk(folder_path):
             for filename in files:

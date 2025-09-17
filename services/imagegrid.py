@@ -121,7 +121,9 @@ class ImageGridService:
         # Åpne bildet i binærmodus
         with open(image_path, 'rb') as image_file:
             # Spesifiser filnavnet, filen og MIME-typen korrekt i files-dictionary
-            files = {'file': (os.path.basename(image_path), image_file, 'image/jpeg')}
+            utf8_filename = os.path.basename(image_path).encode('utf-8')
+            
+            files = {'file': (utf8_filename, image_file, 'image/jpeg')}
             upload_url = f"{self.imgr_api_url}/api/v1.0/moerenett/upload"
 
             # Send POST-forespørselen med filer
