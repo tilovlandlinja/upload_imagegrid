@@ -270,7 +270,7 @@ class ArcGISService:
                 # Calculate Euclidean distance in UTM coordinates (meters)
                 distance = ((target_easting - mast_easting) ** 2 + (target_northing - mast_northing) ** 2) ** 0.5
 
-                print(f"Mast ID {mast['attributes'].get('ID')} at UTM ({mast_easting:.2f}, {mast_northing:.2f}) is {distance:.2f}m away")
+                #print(f"Mast ID {mast['attributes'].get('ID')} at UTM ({mast_easting:.2f}, {mast_northing:.2f}) is {distance:.2f}m away")
 
                 if distance < min_distance:
                     min_distance = distance

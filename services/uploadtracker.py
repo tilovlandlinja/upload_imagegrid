@@ -20,6 +20,7 @@ class ImageUploadTracker:
        return [
                 "filename",
                 "Location",
+                "avstand",
                 "objektnummer",
                 "linje_navn",
                 "linje_id",

@@ -60,7 +60,7 @@ class FindNearestService:
         # Hent GPS-koordinatene fra bildet
         image_coords = self.get_gps_from_image(image_path)
 
-        print(f"GPS-koordinater fra bildet: {image_coords}")
+        #print(f"GPS-koordinater fra bildet: {image_coords}")
         if image_coords == (None, None):
             return None
 
@@ -75,10 +75,10 @@ class FindNearestService:
         # Finn raden med den minste avstanden
         nearest_row = df.loc[df['distance'].idxmin()]
         
-        print(f"GPS-koordinater fra skapet: ( {nearest_row['latitude']}, {nearest_row['longitude']} )")
-        print(f"Nærmeste treff er på avstand: {nearest_row['distance']} m")
+        #print(f"GPS-koordinater fra skapet: ( {nearest_row['latitude']}, {nearest_row['longitude']} )")
+        #print(f"Nærmeste treff er på avstand: {nearest_row['distance']} m")
 
-        if nearest_row['distance'] < 10:
+        if nearest_row['distance'] < 50:  # Juster terskelen etter behov
             return nearest_row
         else:
             return None

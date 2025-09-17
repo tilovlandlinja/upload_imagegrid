@@ -49,18 +49,18 @@ class ToppbefaringUploader:
             # Check if already uploaded
             is_uploaded, upload_time, update_time = self.tracker.has_been_uploaded(file_hash)
             if is_uploaded:
-                print(f"Image {os.path.basename(image_path)} already uploaded at {upload_time}")
+                #print(f"Image {os.path.basename(image_path)} already uploaded at {upload_time}")
                 return None
             
-            print(f"Checking if image {os.path.basename(image_path)} exists in ImageGrid...")
+            #print(f"Checking if image {os.path.basename(image_path)} exists in ImageGrid...")
             exist_in_imagegrid = self.image_service.check_image_exists(file_hash)
-            print(f"Exist in ImageGrid: {exist_in_imagegrid}")
+            #print(f"Exist in ImageGrid: {exist_in_imagegrid}")
 
             
             
             filename = os.path.basename(image_path)  # '2195163-002.jpg'
             number = filename.split('-')[0] if '-' in filename else None  # '2195163'
-            print(number)
+            #print(number)
             # Get GPS coordinates from image (use upload path for EXIF data)
             latitude, longitude = self.find_nearest.get_gps_from_image(image_path)
             if( number ):
@@ -75,11 +75,12 @@ class ToppbefaringUploader:
                     nearest_mast = self.arcgis_service.find_nearest_mast(latitude, longitude)
                     if nearest_mast:
                         mast_attributes = self.arcgis_service.get_mast_attributes(nearest_mast)
-                        print(f"Found nearest mast: {mast_attributes.get('driftsmerking', 'Unknown')} at {nearest_mast.get('distance', 0):.2f}m")
+                        #print(f"Found nearest mast: {mast_attributes.get('driftsmerking', 'Unknown')} at {nearest_mast.get('distance', 0):.2f}m")
                     else:
                         print(f"No nearby mast found for {os.path.basename(image_path)}")
                         log_data = [
                             os.path.basename(image_path),
+                            None,
                             None,
                             None,
                             None,
@@ -99,7 +100,7 @@ class ToppbefaringUploader:
                 mast_attributes = self.arcgis_service.get_mast_attributes(attributes)
 
             if exist_in_imagegrid:
-                print(f"Image {os.path.basename(image_path)} already exists in ImageGrid.")
+                #print(f"Image {os.path.basename(image_path)} already exists in ImageGrid.")
                 # Log the upload in tracking file to avoid future re-uploads
                 image_id = exist_in_imagegrid.get('id')
                 status = "updated_image" if image_id else "exists_no_id"
@@ -112,10 +113,10 @@ class ToppbefaringUploader:
                 # Upload the image
                 upload_result = self.image_service.upload_image(upload_path, file_hash)
 
-                print(f"Upload result: {upload_result}")
+                #print(f"Upload result: {upload_result}")
 
                 if not upload_result:
-                    print(f"Failed to upload {image_path}")
+                    #print(f"Failed to upload {image_path}")
                     upload_result = None
                     # continue to finally block for logging
                     return None
@@ -156,7 +157,7 @@ class ToppbefaringUploader:
 
             longitude, latitude = self.arcgis_service.transform_utm_to_gps(mast_attributes.get('geometry', {}).get('x', longitude), mast_attributes.get('geometry', {}).get('y', latitude))
             
-            print( "Filename: ", filename )
+            #print( "Filename: ", filename )
             
             imageinfo = {
                     'filename': filename,
@@ -181,6 +182,7 @@ class ToppbefaringUploader:
             log_data = [
                 imageinfo.get('filename', ''),
                 imageinfo.get('Location', ''),
+                nearest_mast.get('distance', None),
                 imageinfo.get('objektnummer', ''),
                 imageinfo.get('linje_navn', ''),
                 imageinfo.get('linje_id', ''),
