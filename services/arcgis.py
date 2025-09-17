@@ -234,22 +234,22 @@ class ArcGISService:
             dict: Nearest mast feature with distance, or None if not found
         """
 
-        print(f"Finding nearest mast to GPS coordinates ({latitude}, {longitude}) with max distance {max_distance}m")
+        #print(f"Finding nearest mast to GPS coordinates ({latitude}, {longitude}) with max distance {max_distance}m")
         if not latitude or not longitude:
             return None
 
         # Transform GPS coordinates to UTM
         target_easting, target_northing = self.transform_gps_to_utm(latitude, longitude)
         if target_easting is None or target_northing is None:
-            print(f"Failed to transform GPS coordinates ({latitude}, {longitude}) to UTM")
+            #print(f"Failed to transform GPS coordinates ({latitude}, {longitude}) to UTM")
             return None
 
-        print(f"GPS coordinates ({latitude:.6f}, {longitude:.6f}) -> UTM ({target_easting:.2f}, {target_northing:.2f})")
+        #print(f"GPS coordinates ({latitude:.6f}, {longitude:.6f}) -> UTM ({target_easting:.2f}, {target_northing:.2f})")
 
         # Query ArcGIS for masts within the search distance
         nearby_masts = self.get_mast_data_near_point(target_easting, target_northing, max_distance)
 
-        print(f"Found {len(nearby_masts)} masts from ArcGIS within {max_distance}m")
+        #print(f"Found {len(nearby_masts)} masts from ArcGIS within {max_distance}m")
 
         if not nearby_masts:
             print(f"No masts found within {max_distance}m of GPS coordinates")

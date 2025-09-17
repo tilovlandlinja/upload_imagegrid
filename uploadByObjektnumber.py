@@ -47,8 +47,9 @@ class ToppbefaringUploader:
             file_hash = self.image_service.calculate_file_hash(image_path, 'md5')
 
             # Check if already uploaded
-            is_uploaded, upload_time, update_time = self.tracker.has_been_uploaded(file_hash)
-            if is_uploaded:
+            #is_uploaded, upload_time, update_time = self.tracker.has_been_uploaded(file_hash)
+            is_uploaded_path, upload_time_path, update_time_path = self.tracker.path_has_been_uploaded(image_path)
+            if is_uploaded_path:
                 #print(f"Image {os.path.basename(image_path)} already uploaded at {upload_time}")
                 return None
             
@@ -80,6 +81,7 @@ class ToppbefaringUploader:
                         print(f"No nearby mast found for {os.path.basename(image_path)}")
                         log_data = [
                             os.path.basename(image_path),
+                            image_path,
                             None,
                             None,
                             None,
@@ -181,6 +183,7 @@ class ToppbefaringUploader:
             # Log the upload with all fields from imageinfo
             log_data = [
                 imageinfo.get('filename', ''),
+                image_path,  
                 imageinfo.get('Location', ''),
                 nearest_mast.get('distance', None),
                 imageinfo.get('objektnummer', ''),
@@ -211,6 +214,7 @@ class ToppbefaringUploader:
                 # Lag failed_data med samme rekkefølge og antall kolonner som log_data/imageinfo
                 failed_data = [
                     filename,                # filename
+                    image_path,              # filepath
                     None,                    # Location
                     None,                    # objektnummer
                     None,                    # linje_navn
@@ -257,7 +261,7 @@ class ToppbefaringUploader:
 
         for i, filename in enumerate(image_files, 1):
             image_path = os.path.join(folder_path, filename)
-            print(f"[{i}/{total_files}] Processing {filename}...")
+            #print(f"[{i}/{total_files}] Processing {filename}...")
 
             # Copy attributes template
             attributes = base_attributes_template.copy()

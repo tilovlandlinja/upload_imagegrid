@@ -19,6 +19,7 @@ class ImageUploadTracker:
     def get_columns(self):
        return [
                 "filename",
+                "filepath",
                 "Location",
                 "avstand",
                 "objektnummer",
@@ -42,6 +43,18 @@ class ImageUploadTracker:
             df = pd.read_csv(self.tracking_file, sep=';', encoding='ansi')
             # Sjekk om filehash finnes i DataFrame
             row = df[df['filehash'] == filehash]
+            if not row.empty:
+                return True, row.iloc[0]['uploadtime'], row.iloc[0]['updatetime']
+        return False, None, None
+
+    def path_has_been_uploaded(self, filepath):
+        """
+        Sjekker om bildet allerede er lastet opp basert på filepath.
+        """
+        if os.path.exists(self.tracking_file):
+            df = pd.read_csv(self.tracking_file, sep=';', encoding='ansi')
+            # Sjekk om filepath finnes i DataFrame
+            row = df[df['filepath'] == filepath]
             if not row.empty:
                 return True, row.iloc[0]['uploadtime'], row.iloc[0]['updatetime']
         return False, None, None
@@ -88,6 +101,7 @@ if __name__ == "__main__":
 
     # Eksempeldata for opplastingen
     filename = 'path_to_your_image.jpg'
+    filepath = 'C:/path/to/your/image.jpg'
     latitude = 62.293172
     longitude = 6.842709
     anleggstype = "Type A"
