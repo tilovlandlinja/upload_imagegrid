@@ -48,3 +48,4 @@ logs/
 *_upload_log.csv
 image_upload_log.csv
 toppbefaring_upload_log.csv
+*_bugs.csv

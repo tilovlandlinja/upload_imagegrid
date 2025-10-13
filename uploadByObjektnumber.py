@@ -8,6 +8,7 @@ from services.uploadtracker import ImageUploadTracker
 from services.findnearast import FindNearestService
 from services.arcgis import ArcGISService
 from services.image_processing import ImageProcessingService
+import pandas as pd
 
 # Load environment variables from .env file
 load_dotenv()
@@ -20,7 +21,7 @@ class ToppbefaringUploader:
         self.token_url = token_url or os.getenv('IMAGEGRID_TOKEN_URL')
         self.imgr_api_url = imgr_api_url or os.getenv('IMAGEGRID_API_URL')
         self.kilde = os.getenv('KILDE', 'test toppbefaring 2025')
-        self.tracking_file = self.kilde.replace(" ", "_").lower() + "_upload_log.csv"
+        self.tracking_file = "C:\\ImagegridScripts\\logs\\" + self.kilde.replace(" ", "_").lower() + "_upload_log.csv"
 
         # Validate required credentials
         if not all([self.client_id, self.client_secret, self.token_url, self.imgr_api_url]):
@@ -34,6 +35,14 @@ class ToppbefaringUploader:
         self.tenant_name = "moerenett"
         self.schema_name = "Toppbefaring"
 
+        # Load tracking data
+        try:
+            self.df = pd.read_csv(self.tracking_file, sep=';', encoding='ansi')
+            self.existing_files = set(self.df['filepath'].dropna().tolist())
+        except FileNotFoundError:
+            self.df = pd.DataFrame()
+            self.existing_files = set()
+
     def upload_toppbefaring_image(self, image_path, base_attributes, find_mast=True, resize_options=None):
         upload_result = None
         try:
@@ -43,22 +52,26 @@ class ToppbefaringUploader:
             max_height = 4320
             quality = 90
             
-            # Calculate file hash (use original path for tracking)
-            file_hash = self.image_service.calculate_file_hash(image_path, 'md5')
+            
+            # Check if already uploaded
+            if image_path in self.existing_files:
+                print(f"Image {os.path.basename(image_path)} already uploaded, skipping.")
+                return "Skipped"
 
             # Check if already uploaded
             #is_uploaded, upload_time, update_time = self.tracker.has_been_uploaded(file_hash)
-            is_uploaded_path, upload_time_path, update_time_path = self.tracker.path_has_been_uploaded(image_path)
+            """ is_uploaded_path, upload_time_path, update_time_path = self.tracker.path_has_been_uploaded(image_path)
             if is_uploaded_path:
-                #print(f"Image {os.path.basename(image_path)} already uploaded at {upload_time}")
-                return None
+                #print(f"Image {os.path.basename(image_path)} already uploaded at {upload_time_path}, skipping.")
+                return "Skipped" """
+            
+            # Calculate file hash (use original path for tracking)
+            file_hash = self.image_service.calculate_file_hash(image_path, 'md5')
             
             #print(f"Checking if image {os.path.basename(image_path)} exists in ImageGrid...")
             exist_in_imagegrid = self.image_service.check_image_exists(file_hash)
             #print(f"Exist in ImageGrid: {exist_in_imagegrid}")
 
-            
-            
             filename = os.path.basename(image_path)  # '2195163-002.jpg'
             number = filename.split('-')[0] if '-' in filename else None  # '2195163'
             #print(number)
@@ -92,8 +105,8 @@ class ToppbefaringUploader:
                             None,
                             None,
                             file_hash,
-                            upload_time if upload_time else datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            update_time if update_time else datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                             "No nearby mast found"
                         ]
                         self.tracker.log_upload(log_data)
@@ -149,7 +162,7 @@ class ToppbefaringUploader:
             if latitude and longitude:
                 longitude, latitude = self.arcgis_service.transform_utm_to_gps(mast_attributes.get('geometry', {}).get('x', longitude), mast_attributes.get('geometry', {}).get('y', latitude))
 
-            """ print(f"Combined attributes for {os.path.basename(image_path)}: {combined_attributes}") """
+            print(f"Combined attributes for {os.path.basename(image_path)}: {combined_attributes}")
 
             objectnumber = mast_attributes.get('id', '')
             driftsmerking = combined_attributes.get('driftsmerking', '')
@@ -178,7 +191,7 @@ class ToppbefaringUploader:
             #print(f"Update result: {update_result}")
             if update_result == "Update failed":
                 print(f"Failed to update attributes for {image_path}")
-                return None
+                return "Update failed"
 
             # Log the upload with all fields from imageinfo
             log_data = [
@@ -201,6 +214,9 @@ class ToppbefaringUploader:
 
             """ print(f"Logging upload: {log_data}") """
             self.tracker.log_upload(log_data)
+            # Update the set of existing files if upload was successful
+            if log_data[-1] != "failed":
+                self.existing_files.add(image_path)
 
             print(f"Successfully uploaded and updated {imageinfo.get('filename')}")
             return upload_result
@@ -216,6 +232,7 @@ class ToppbefaringUploader:
                     filename,                # filename
                     image_path,              # filepath
                     None,                    # Location
+                    None,                    # distance
                     None,                    # objektnummer
                     None,                    # linje_navn
                     None,                    # linje_id
@@ -271,17 +288,12 @@ class ToppbefaringUploader:
 
             result = self.upload_toppbefaring_image(image_path, attributes, find_mast, resize_options)
 
-            
-            if result is None:
-                # Check if it was skipped (already uploaded) or failed
-                file_hash = self.image_service.calculate_file_hash(image_path, 'md5')
-                is_uploaded, _, _ = self.tracker.has_been_uploaded(file_hash)
-                if is_uploaded:
-                    skipped_count += 1
-                    print(f"[{i}/{total_files}] {filename}: Skipped (already uploaded)")
-                else:
-                    failed_count += 1
-                    print(f"[{i}/{total_files}] {filename}: Failed")
+            if result == "Skipped":
+                skipped_count += 1
+                #print(f"[{i}/{total_files}] {filename}: Skipped (already uploaded)")
+            elif result is None:
+                failed_count += 1
+                print(f"[{i}/{total_files}] {filename}: Failed")
             else:
                 uploaded_count += 1
                 print(f"[{i}/{total_files}] {filename}: Uploaded successfully")

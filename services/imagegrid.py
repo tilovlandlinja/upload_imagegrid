@@ -172,7 +172,7 @@ class ImageGridService:
 
         url = f"{self.imgr_api_url}api/v1.0/{tenant_name}/{schema_name}/{image_id}/runschematasks"
         
-        #print(f"runschematasks_URL->>> {url}")
+        print(f"runschematasks_URL->>> {url}")
 
         #print( f"Record->>> {record}")
         # Konverter 'record' til JSON
@@ -188,8 +188,8 @@ class ImageGridService:
 
         # Send POST-forespørselen for å oppdatere bildet
         response = requests.post(url, headers=headers, data=json_data)
-        #print("Status code:", response.status_code)
-        #print(response.json())
+        print("Status code:", response.status_code)
+        print(response.json())
         if response.status_code == 200:
             #   print(response.json())
             print("Update successful.")
@@ -203,7 +203,6 @@ class ImageGridService:
     def check_image_exists(self, fileHash):
         
         token = self.get_access_token()
-
         headers = {
             'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'

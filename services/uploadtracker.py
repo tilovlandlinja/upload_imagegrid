@@ -1,13 +1,21 @@
 import os
 import pandas as pd
 from datetime import datetime
+import sys
+
+# Add models directory to path
+models_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'models')
+if models_path not in sys.path:
+    sys.path.append(models_path)
+
+from models.image_info import ImageInfo
 
 class ImageUploadTracker:
 
-   
-
     def __init__(self, tracking_file='image_upload_log.csv'):
         self.tracking_file = tracking_file
+        self.image_info = ImageInfo()
+        
         # Sjekk om CSV-filen finnes, hvis ikke, opprett den med de ønskede feltene
         if not os.path.exists(self.tracking_file):
             # Opprett en tom DataFrame med de nødvendige kolonnene
@@ -17,23 +25,8 @@ class ImageUploadTracker:
             df.to_csv(self.tracking_file, sep=';', index=False, encoding='ansi')
 
     def get_columns(self):
-       return [
-                "filename",
-                "filepath",
-                "Location",
-                "avstand",
-                "objektnummer",
-                "linje_navn",
-                "linje_id",
-                "driftsmerking",
-                "erHistorisk",
-                "kilde",
-                "anleggstype",
-                "filehash",
-                "uploadtime",
-                "updatetime",
-                "status"
-            ]
+        """Get standardized column definitions from ImageInfo class."""
+        return self.image_info.get_log_headers()
     
     def has_been_uploaded(self, filehash):
         """
@@ -43,6 +36,7 @@ class ImageUploadTracker:
             df = pd.read_csv(self.tracking_file, sep=';', encoding='ansi')
             # Sjekk om filehash finnes i DataFrame
             row = df[df['filehash'] == filehash]
+            print(f"Checking upload status for filehash {filehash}: Found {len(row)} entries.")
             if not row.empty:
                 return True, row.iloc[0]['uploadtime'], row.iloc[0]['updatetime']
         return False, None, None

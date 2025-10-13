@@ -135,6 +135,8 @@ class ArcGISService:
         if params is None:
             params = {}
         params['token'] = token
+        
+        print(url, params)
 
         try:
             response = requests.get(url, params=params)
@@ -152,6 +154,34 @@ class ArcGISService:
             else:
                 raise Exception(f"ArcGIS API request failed: {e}")
 
+    def find_nettstasjon(self, driftsmerking):
+        
+        params = {
+            'where': f"DRIFTSMERKING='{driftsmerking}'",
+            'outFields': "*",
+            'f': 'json'
+        }
+
+        try:
+            nsurl = 'https://map.linja.no/arcgis/rest/services/Volue/iAMViewer3/MapServer/1/query'
+            data = self._make_authenticated_request(nsurl, params)
+
+            #print(data)
+
+            if 'features' in data:
+                ns_attributes = data['features'][0]
+                
+                
+                #print(ns_attributes)
+                return ns_attributes
+            else:
+                print(f"No features found. Response:")
+                return []
+        except Exception as e:
+            print(f"Error querying ArcGIS: {e}")
+            return []
+
+            
     def get_mast_data(self, where_clause="1=1", out_fields="*", return_geometry=True):
         """
         Query the ArcGIS mast layer to get mast data.
@@ -192,7 +222,7 @@ class ArcGISService:
         # Create geometry point in UTM coordinates
         geometry = f"{{\"x\":{easting:.2f},\"y\":{northing:.2f}}}"
 
-        params = {
+        """ params = {
             'geometry': geometry,
             'geometryType': 'esriGeometryPoint',
             'inSR': spatial_ref,
@@ -202,6 +232,18 @@ class ArcGISService:
             'outFields': '*',
             'returnGeometry': True,
             'where': 'SPENNING = 22',
+            'f': 'json'
+        } """
+
+        params = {
+            'geometry': geometry,
+            'geometryType': 'esriGeometryPoint',
+            'inSR': spatial_ref,
+            'spatialRel': 'esriSpatialRelIntersects',
+            'distance': distance,
+            'units': 'esriSRUnit_Meter',
+            'outFields': '*',
+            'returnGeometry': True,
             'f': 'json'
         }
 
